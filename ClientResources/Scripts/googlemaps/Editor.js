@@ -15,9 +15,6 @@
  * Create an EditorDesctriptor class setting ClientEditingClass to 'tedgustaf.googlemaps.Editor' and use it for any string property.
  */
 
-/* KNOWN ISSUES
-  * If a Google Places suggestion is clicked (instead of selected with Enter key) EPiServer may not trigger the property's auto-save.
- */
 
 define([
     "dojo/_base/connect", // To be able to connect Dojo events
