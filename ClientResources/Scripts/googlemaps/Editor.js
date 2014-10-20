@@ -1,15 +1,16 @@
 ﻿/** @license
  * Dojo widget for selecting map coordinates using Google Maps when editing a string property in EPiServer 7.5
- * Author: Ted Nyberg (http://tedgustaf.com/ted)
+ * Author: Ted Nyberg (@tednyberg)
+ * Company: Ted & Gustaf AB (http://tedgustaf.com)
  * Version: 0.1.1 (2014-10-20)
  * Released under the MIT license (http://opensource.org/licenses/MIT)
  */
 
 /* HOW TO USE
- * Put the entire 'googlemaps' folder inside the /ClientResources folder in the site root.
+ * Put the entire 'googlemaps' folder inside /ClientResources/Scripts folder in the site root.
  * Ensure you have a modules.config file in the site root containing:
  *   <dojoModules>   
- *     <add name="tedgustaf" path="" />  
+ *     <add name="tedgustaf" path="Scripts" />  
  *   </dojoModules>
  * Create an EditorDesctriptor class setting ClientEditingClass to 'tedgustaf.googlemaps.Editor' and use it for any string property.
  */
