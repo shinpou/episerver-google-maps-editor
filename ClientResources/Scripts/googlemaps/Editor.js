@@ -258,7 +258,7 @@ function (
             if (typeof this.value === "string") {
 
                 // Concatenate a string with the coordinates, this is how the property value will be saved
-                var coordinatesAsString = longitude + "," + latitude;
+                var coordinatesAsString = latitude + "," + longitude;
 
                 this.log('Coordinate values converted to string', coordinatesAsString);
 
