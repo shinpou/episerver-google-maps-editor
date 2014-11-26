@@ -66,15 +66,6 @@ function (
 
             console.log.apply(this, arguments);
         },
-
-        // Logs error message to the console, if available
-        error: function (consoleLogArgs) {
-            if (typeof console !== "object") {
-                return;
-            }
-
-            console.error.apply(this, arguments);
-        },
         
         // The Google Maps object of this widget instance
         map: this.canvas,
@@ -120,7 +111,7 @@ function (
                     this.longitudeTextbox.set('value', this.value.longitude);
                     this.latitudeTextbox.set('value', this.value.latitude);
                 } else {
-                    this.error('Value type \'' + typeof this.value + '\' is not supported by map editor, value must be a string or an object with \'latitude\' and \'longitude\' float properties');
+                    this.log('Value type \'' + typeof this.value + '\' is not supported by map editor, value must be a string or an object with \'latitude\' and \'longitude\' float properties');
                 }
             }
 
@@ -169,8 +160,6 @@ function (
             // tags:
             //    protected, override
 
-            this.log('Validating map editor property value', this.value);
-
             if (!this.value || this.value === '' || this.value == undefined || (typeof this.value === "object" && (isNaN(this.value.longitude) || isNaN(this.value.latitude)))) {
                 this.log('Map editor value is not valid, no value set');
                 return !this.required; // Making use of _ValueRequiredMixin to check if a property value is required
@@ -198,12 +187,10 @@ function (
                                                this.value.longitude > 0 &&
                                                this.value.latitude > 0;
 
-                this.log('Validated coordinates value object', this.value, isValidCoordinatesObject);
-
                 return isValidCoordinatesObject;
             }
 
-            this.error('Unsupported value type for map editor, unable to validate value');
+            this.log('Unsupported value type for map editor, unable to validate value');
 
             return false;
         },
@@ -211,18 +198,13 @@ function (
         // Checks if the current value is valid coordinates
         hasCoordinates: function () {
 
-            this.log('Checking if editor has coordinates');
-
             if (!this.isValid() || !this.value || this.valueOf === '' || (typeof this.value === "object" && (isNaN(this.value.longitude) || isNaN(this.value.latitude)))) {
-                this.log('Map editor does not have any coordinates set');
                 return false;
             }
 
             if (typeof this.value === "string") {
-                this.log('Checking if string value represents comma-separated coordinates');
                 return this.value.split(',').length == 2; // String value with comma-separated coordinates
             } else if (typeof this.value === "object") { // Complex type with separate properties for latitude and longitude
-                this.log('Checking if value object has valid coordinate properties');
                 return this.value.longitude !== undefined &&
                        this.value.latitude !== undefined &&
                        !isNaN(this.value.longitude) &&
@@ -230,8 +212,6 @@ function (
                        this.value.longitude > 0 &&
                        this.value.latitude > 0;
             }
-
-            this.error('Unsupported value type for map editor, unable to check for coordinates');
 
             return false;
         },
@@ -309,7 +289,7 @@ function (
         // Setup the Google Maps canvas
         initializeMap: function () {
 
-            var defaultCoordinates;
+            var defaultCoordinates = new google.maps.LatLng(59.336, 18.063);
 
             // Center on current coordinates (i.e. property value), or a default location if no coordinates are set
             if (this.hasCoordinates()) {
@@ -319,11 +299,7 @@ function (
                 }
                 else if (typeof this.value === "object") {
                     defaultCoordinates = new google.maps.LatLng(this.value.latitude, this.value.longitude);
-                } else {
-                    this.error('Unsupported value type for map editor, unable to initialize map');
                 }
-            } else {
-                defaultCoordinates = new google.maps.LatLng(59.336, 18.063);
             }
 
             // Render the map, but disable interaction if property is readonly
