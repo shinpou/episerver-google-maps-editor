@@ -1,20 +1,22 @@
 ﻿/** @license
  * Dojo widget for selecting map coordinates using Google Maps when editing a string property in EPiServer 7.5
- * Author: Ted Nyberg (@tednyberg)
- * Company: Ted & Gustaf AB (http://tedgustaf.com)
- * Version: 0.1.1 (2014-10-20)
+ * Author: Ted Nyberg (http://tedgustaf.com/ted)
+ * Version: 0.2.0 (2014-11-26)
  * Released under the MIT license (http://opensource.org/licenses/MIT)
  */
 
 /* HOW TO USE
- * Put the entire 'googlemaps' folder inside /ClientResources/Scripts folder in the site root.
+ * Put the entire 'googlemaps' folder inside the /ClientResources folder in the site root.
  * Ensure you have a modules.config file in the site root containing:
  *   <dojoModules>   
- *     <add name="tedgustaf" path="Scripts" />  
+ *     <add name="tedgustaf" path="" />  
  *   </dojoModules>
- * Create an EditorDesctriptor class setting ClientEditingClass to 'tedgustaf.googlemaps.Editor' and use it for any string property.
- */
+ * Create an EditorDesctriptor class setting ClientEditingClass to 'tedgustaf.googlemaps.Editor' and use it for any string property, or a complex type with "Longitude" and "Latitude" properties.
+  */
 
+/* KNOWN ISSUES
+  * If a Google Places suggestion is clicked (instead of selected with Enter key) EPiServer may not trigger the property's auto-save.
+ */
 
 define([
     "dojo/_base/connect", // To be able to connect Dojo events
@@ -54,9 +56,26 @@ function (
 
     localized
 ) {
-   
     return declare([_Widget, _TemplatedMixin, _WidgetsInTemplateMixin, _ValueRequiredMixin], {
 
+        // Logs debug message to the console, if available
+        log: function(consoleLogArgs) {
+            if (typeof console !== "object") {
+                return;
+            }
+
+            console.log.apply(this, arguments);
+        },
+
+        // Logs error message to the console, if available
+        error: function (consoleLogArgs) {
+            if (typeof console !== "object") {
+                return;
+            }
+
+            console.error.apply(this, arguments);
+        },
+        
         // The Google Maps object of this widget instance
         map: this.canvas,
 
@@ -81,6 +100,8 @@ function (
         // Dojo event fired after all properties of a widget are defined, but before the fragment itself is added to the main HTML document
         postCreate: function () {
 
+            this.log('Initializing Google Maps editor', this.value);
+
             // Call base implementation of postCreate, passing on any parameters
             this.inherited(arguments);
 
@@ -89,10 +110,18 @@ function (
 
             // Set coordinate textboxes to current property value
             if (this.hasCoordinates()) {
-                var coordinates = this.value.split(',');
-
-                this.longitudeTextbox.set('value', coordinates[0]);
-                this.latitudeTextbox.set('value', coordinates[1]);                
+                if (typeof this.value === "string") {
+                    this.log('Map editor is backed by a string value');
+                    var coordinates = this.value.split(',');
+                    this.longitudeTextbox.set('value', coordinates[0]);
+                    this.latitudeTextbox.set('value', coordinates[1]);
+                } else if (typeof this.value === "object") {
+                    this.log('Map editor is backed by a complex value');
+                    this.longitudeTextbox.set('value', this.value.longitude);
+                    this.latitudeTextbox.set('value', this.value.latitude);
+                } else {
+                    this.error('Value type \'' + typeof this.value + '\' is not supported by map editor, value must be a string or an object with \'latitude\' and \'longitude\' float properties');
+                }
             }
 
             // When the editor switches tabs in the UI we trigger a map resize to ensure it aligns properly
@@ -140,33 +169,71 @@ function (
             // tags:
             //    protected, override
 
-            if (!this.value || this.value === '') { 
+            this.log('Validating map editor property value', this.value);
+
+            if (!this.value || this.value === '' || this.value == undefined || (typeof this.value === "object" && (isNaN(this.value.longitude) || isNaN(this.value.latitude)))) {
+                this.log('Map editor value is not valid, no value set');
                 return !this.required; // Making use of _ValueRequiredMixin to check if a property value is required
             }
 
-            var coordinates = this.value.split(',');
+            if (typeof this.value === "string") {
+                var coordinates = this.value.split(',');
 
-            if (coordinates.length != 2) { // Valid value is longitude and latitude, separated by a comma
-                return false;
-            }
-
-            for (var i = 0; i < 1; i++) {
-                if (isNaN(coordinates[0]) || coordinates[0].toString().indexOf('.') == -1) {
-                    return false; // The coordinate is not a float number
+                if (coordinates.length != 2) { // Valid value is longitude and latitude, separated by a comma
+                    return false;
                 }
+
+                for (var i = 0; i < 1; i++) {
+                    if (isNaN(coordinates[0]) || coordinates[0].toString().indexOf('.') == -1) {
+                        return false; // The coordinate is not a float number
+                    }
+                }
+
+                return true;
+            } else if (typeof this.value === "object") { // Complex type, ensure coordinates are positive numbers
+                var isValidCoordinatesObject = this.value.longitude !== undefined &&
+                                               this.value.latitude !== undefined &&
+                                               !isNaN(this.value.longitude) &&
+                                               !isNaN(this.value.latitude) &&
+                                               this.value.longitude > 0 &&
+                                               this.value.latitude > 0;
+
+                this.log('Validated coordinates value object', this.value, isValidCoordinatesObject);
+
+                return isValidCoordinatesObject;
             }
 
-            return true;
+            this.error('Unsupported value type for map editor, unable to validate value');
+
+            return false;
         },
 
         // Checks if the current value is valid coordinates
         hasCoordinates: function () {
-            
-            if (!this.isValid() || !this.value || this.valueOf === '') {
+
+            this.log('Checking if editor has coordinates');
+
+            if (!this.isValid() || !this.value || this.valueOf === '' || (typeof this.value === "object" && (isNaN(this.value.longitude) || isNaN(this.value.latitude)))) {
+                this.log('Map editor does not have any coordinates set');
                 return false;
             }
 
-            return this.value.split(',').length == 2;
+            if (typeof this.value === "string") {
+                this.log('Checking if string value represents comma-separated coordinates');
+                return this.value.split(',').length == 2; // String value with comma-separated coordinates
+            } else if (typeof this.value === "object") { // Complex type with separate properties for latitude and longitude
+                this.log('Checking if value object has valid coordinate properties');
+                return this.value.longitude !== undefined &&
+                       this.value.latitude !== undefined &&
+                       !isNaN(this.value.longitude) &&
+                       !isNaN(this.value.latitude) &&
+                       this.value.longitude > 0 &&
+                       this.value.latitude > 0;
+            }
+
+            this.error('Unsupported value type for map editor, unable to check for coordinates');
+
+            return false;
         },
 
         // Setter for value property (invoked by EPiServer on load)
@@ -188,11 +255,21 @@ function (
                 return;
             }
 
-            // Concatenate a string with the coordinates, this is how the property value will be saved
-            var coordinatesAsString = longitude + "," + latitude;
+            if (typeof this.value === "string") {
 
-            // Update the widget (i.e. property) value
-            this._setValue(coordinatesAsString);
+                // Concatenate a string with the coordinates, this is how the property value will be saved
+                var coordinatesAsString = longitude + "," + latitude;
+
+                this.log('Coordinate values converted to string', coordinatesAsString);
+
+                // Update the widget (i.e. property) value
+                this._setValue(coordinatesAsString);
+
+            } else if (typeof this.value === "object") {
+                var coordinatesObject = { latitude: parseFloat(latitude), longitude: parseFloat(longitude) };
+                this.log('Coordinate values converted to object', coordinatesObject);
+                this._setValue(coordinatesObject);
+            }           
         },
 
         // Used to set the widget (property) value
@@ -236,8 +313,15 @@ function (
 
             // Center on current coordinates (i.e. property value), or a default location if no coordinates are set
             if (this.hasCoordinates()) {
-                var coordinates = this.value.split(',');
-                defaultCoordinates = new google.maps.LatLng(parseFloat(coordinates[0]), parseFloat(coordinates[1]));
+                if (typeof this.value === "string") {
+                    var coordinates = this.value.split(',');
+                    defaultCoordinates = new google.maps.LatLng(parseFloat(coordinates[0]), parseFloat(coordinates[1]));
+                }
+                else if (typeof this.value === "object") {
+                    defaultCoordinates = new google.maps.LatLng(this.value.latitude, this.value.longitude);
+                } else {
+                    this.error('Unsupported value type for map editor, unable to initialize map');
+                }
             } else {
                 defaultCoordinates = new google.maps.LatLng(59.336, 18.063);
             }
@@ -322,8 +406,8 @@ function (
         setMapLocation: function (/* google.maps.LatLng */ location, zoom, center) {
 
             // Set the values of the coordinate textboxes to longitude and latitude, respectively
-            this.longitudeTextbox.set('value', location.lat());
-            this.latitudeTextbox.set('value', location.lng());
+            this.longitudeTextbox.set('value', location.lng());
+            this.latitudeTextbox.set('value', location.lat());
 
             // Set the marker's position
             if (!this.marker) { // No marker yet, create one
