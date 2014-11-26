@@ -228,6 +228,9 @@ function (
 
         // Update widget value when a coordinate is changed
         _onCoordinateChanged: function () {
+
+            this.log('Coordinates changed', this.value);
+
             var longitude = this.longitudeTextbox.get('value');
             var latitude = this.latitudeTextbox.get('value');
 
@@ -235,17 +238,14 @@ function (
                 return;
             }
 
-            if (typeof this.value === "object") { // Property is complex type, such as a local block
+            // Update the widget (i.e. property) value
+            if (this.value != null && typeof this.value === "object") { // Property is complex type, such as a local block
                 var coordinatesObject = { latitude: parseFloat(latitude), longitude: parseFloat(longitude) };
                 this.log('Coordinate values will be saved as a complex type', coordinatesObject);
                 this._setValue(coordinatesObject);
-            } else {
-                // Concatenate a string with the coordinates, this is how the property value will be saved
+            } else { // Assume string value type
                 var coordinatesAsString = latitude + "," + longitude;
-
                 this.log('Coordinate values will be saved as a string', coordinatesAsString);
-
-                // Update the widget (i.e. property) value
                 this._setValue(coordinatesAsString);
             }
         },
