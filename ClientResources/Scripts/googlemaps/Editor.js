@@ -235,21 +235,19 @@ function (
                 return;
             }
 
-            if (typeof this.value === "string") {
-
+            if (typeof this.value === "object") { // Property is complex type, such as a local block
+                var coordinatesObject = { latitude: parseFloat(latitude), longitude: parseFloat(longitude) };
+                this.log('Coordinate values will be saved as a complex type', coordinatesObject);
+                this._setValue(coordinatesObject);
+            } else {
                 // Concatenate a string with the coordinates, this is how the property value will be saved
                 var coordinatesAsString = latitude + "," + longitude;
 
-                this.log('Coordinate values converted to string', coordinatesAsString);
+                this.log('Coordinate values will be saved as a string', coordinatesAsString);
 
                 // Update the widget (i.e. property) value
                 this._setValue(coordinatesAsString);
-
-            } else if (typeof this.value === "object") {
-                var coordinatesObject = { latitude: parseFloat(latitude), longitude: parseFloat(longitude) };
-                this.log('Coordinate values converted to object', coordinatesObject);
-                this._setValue(coordinatesObject);
-            }           
+            }
         },
 
         // Used to set the widget (property) value
