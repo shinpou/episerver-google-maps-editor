@@ -2,7 +2,7 @@
     root: {
         latitude: "Latitude",
         longitude: "Longitude",
-        search: "Enter an address or location",
+        search: "Enter a location or right-click the map",
         clear: "Clear coordinates"
     },
 
