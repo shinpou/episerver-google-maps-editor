@@ -158,13 +158,13 @@ function (
                 }
 
                 return true;
-            } else if (typeof this.value === "object") { // Complex type, ensure coordinates are positive numbers
+            } else if (typeof this.value === "object") { // Complex type, ensure coordinates are numbers
                 var isValidCoordinatesObject = this.value.longitude !== undefined &&
                                                this.value.latitude !== undefined &&
                                                !isNaN(this.value.longitude) &&
                                                !isNaN(this.value.latitude) &&
-                                               this.value.longitude > 0 &&
-                                               this.value.latitude > 0;
+                                               this.value.longitude !== 0 &&
+                                               this.value.latitude !== 0;
 
                 return isValidCoordinatesObject;
             }
@@ -186,8 +186,8 @@ function (
                        this.value.latitude !== undefined &&
                        !isNaN(this.value.longitude) &&
                        !isNaN(this.value.latitude) &&
-                       this.value.longitude > 0 &&
-                       this.value.latitude > 0;
+                       this.value.longitude !== 0 &&
+                       this.value.latitude !== 0;
             }
 
             return false;
