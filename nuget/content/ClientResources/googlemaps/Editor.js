@@ -14,7 +14,7 @@
   */
 
 define([
-    "dojo/_base/connect", // To be able to connect Dojo events
+    "dojo/on", // To connect events
     "dojo/_base/declare", // Used to declare the actual widget
 
     "dojo/aspect", // Used to attach to events in an aspect-oriented way to inject behaviors
@@ -28,13 +28,16 @@ define([
 
     "epi/epi", // For example to use areEqual to compare property values
     "epi/shell/widget/_ValueRequiredMixin", // In order to check if the property is in a readonly state
+    "epi/shell/widget/dialog/LightWeight", // Used to display the help message
 
     "dojo/i18n!./nls/Labels", // Localization files containing translations
+
+    'xstyle/css!./WidgetTemplate.css',
 
     "tedgustaf/googlemaps/Async!https://maps.googleapis.com/maps/api/js?v=3.exp&libraries=places" // Use async module to load external asyncronously loaded script for Google Maps
 ],
 function (
-    connect,
+    on,
     declare,
 
     aspect,
@@ -48,6 +51,7 @@ function (
 
     epi,
     _ValueRequiredMixin,
+    LightWeight,
 
     localized
 ) {
@@ -64,7 +68,8 @@ function (
 
         // Event used to notify EPiServer that the property value has changed
         onChange: function (value) {
-            
+            console.log('onchange');
+            this.parent.save(value); // HACK Otherwise value won't be saved when Google Places search result item is clicked (instead of using Enter to select it)
         },
 
         // Dojo function invoked before rendering
@@ -101,6 +106,27 @@ function (
                 aspect.after(tab, "selectChild", function () {
                     that.alignMap();
                 });
+            });
+
+            // Display help when help icon is clicked
+            on(this.helpIcon, "click", function (e) {
+                e.preventDefault();
+
+                var dialog = new LightWeight({
+                    style: "width: 540px",
+                    closeIconVisible: true,
+                    showButtonContainer: false,
+                    onButtonClose: function() {
+                        dialog.hide();
+                    },
+                    _endDrag: function () {
+                        // HACK Avoid EPiServer bug, "Cannot read property 'userSetTransformId' of null" when close icon is clicked
+                    },
+                    title: that.localized.help.dialogTitle,
+                    content: that.localized.help.dialogHtml
+                });
+
+                dialog.show();
             });
         },
 
@@ -246,6 +272,9 @@ function (
             // Clear coordinate checkboxes
             this.longitudeTextbox.set('value', '', false); // Change value without triggering onChange event as we will explicitly null the property value
             this.latitudeTextbox.set('value', '');
+
+            // Clear search box
+            this.searchTextbox.set("value", '');
 
             // Remove the map marker, if any
             if (this.marker) {
