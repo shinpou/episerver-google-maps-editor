@@ -172,8 +172,9 @@ function (
 
             if (typeof this.value === "string") {
                 var coordinates = this.value.split(',');
-
-                if (coordinates.length != 2) { // Valid value is longitude and latitude, separated by a comma
+                
+                // Valid value is longitude and latitude, and an optional zoom level parameter which is not used, separated by a comma
+                if (coordinates.length !== 2 && coordinates.length !== 3) {
                     return false;
                 }
 
@@ -206,7 +207,8 @@ function (
             }
 
             if (typeof this.value === "string") {
-                return this.value.split(',').length == 2; // String value with comma-separated coordinates
+                var parameterCount = this.value.split(',').length;
+                return parameterCount === 2 || parameterCount === 3; // String value with comma-separated coordinates
             } else if (typeof this.value === "object") { // Complex type with separate properties for latitude and longitude
                 return this.value.longitude !== undefined &&
                        this.value.latitude !== undefined &&
